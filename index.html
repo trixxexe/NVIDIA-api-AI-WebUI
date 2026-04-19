@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>NVIDIA Edge AI - Ultimate</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-base: #0a0a0c;
+            --bg-surface: rgba(19, 19, 20, 0.75);
+            --bg-surface-elevated: rgba(30, 31, 32, 0.85);
+            --bg-surface-highest: rgba(40, 42, 44, 0.95);
+            --text-primary: #e3e3e3;
+            --text-secondary: #c4c7c5;
+            --text-tertiary: #8e918f;
+            --accent-blue: #a8c7fa;
+            --accent-green: #76b900;
+            --danger: #ff4a4a;
+            --warning: #ffb800;
+            --gemini-gradient: linear-gradient(74deg, #4285f4 0, #9b72cb 9%, #d96570 20%, #d96570 24%, #9b72cb 35%, #4285f4 44%, #9b72cb 50%, #d96570 56%, #131314 75%, #131314 100%);
+            --border-light: rgba(255, 255, 255, 0.08);
+            --font-main: "Google Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --transition-smooth: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); -webkit-tap-highlight-color: transparent; outline: none; }
+        
+        html, body { 
+            height: 100dvh; width: 100vw; 
+            background-color: var(--bg-base); color: var(--text-primary); 
+            overflow: hidden; display: flex; flex-direction: column; position: relative;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+        #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0.6; }
+        [contenteditable="true"] { border-bottom: 1px dashed transparent; transition: border 0.3s; }
+        [contenteditable="true"]:hover, [contenteditable="true"]:focus { border-bottom: 1px dashed var(--text-secondary); cursor: text; }
+
+        header { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: var(--bg-surface); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); flex-shrink: 0; z-index: 10; border-bottom: 1px solid var(--border-light); }
+        .header-left, .header-right { display: flex; align-items: center; gap: 16px; }
+        
+        .icon-btn { background: rgba(255,255,255,0.03); border: 1px solid var(--border-light); color: var(--text-secondary); font-size: 20px; cursor: pointer; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: var(--transition-smooth); }
+        .icon-btn:hover { background: var(--bg-surface-elevated); color: var(--text-primary); transform: scale(1.05); }
+        
+        .app-title { font-size: 22px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.5px; }
+        
+        .model-badge { background: var(--bg-surface-elevated); border: 1px solid var(--border-light); padding: 8px 16px; border-radius: 12px; font-size: 14px; font-weight: 500; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: var(--transition-smooth); backdrop-filter: blur(8px); }
+        .model-badge:hover { background: var(--bg-surface-highest); border-color: rgba(255,255,255,0.2); color: var(--text-primary); box-shadow: 0 0 15px rgba(255,255,255,0.05); }
+        
+        .user-pfp { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; cursor: pointer; background: var(--bg-surface-highest); border: 2px solid var(--border-light); transition: 0.3s; }
+        .user-pfp:hover { border-color: var(--accent-blue); box-shadow: 0 0 15px rgba(168, 199, 250, 0.4); }
+
+        .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 99; opacity: 0; visibility: hidden; transition: 0.3s; backdrop-filter: blur(5px); }
+        .sidebar-overlay.active { opacity: 1; visibility: visible; }
+        
+        #sidebar { position: fixed; top: 0; left: -340px; width: 320px; height: 100dvh; background: var(--bg-surface-elevated); z-index: 100; display: flex; flex-direction: column; transition: left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); box-shadow: 10px 0 30px rgba(0,0,0,0.6); border-right: 1px solid var(--border-light); backdrop-filter: blur(20px); }
+        #sidebar.open { left: 0; }
+        
+        .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border-light); }
+        .new-chat-btn { background: var(--bg-surface-highest); color: var(--text-primary); border: 1px solid var(--border-light); padding: 14px 20px; border-radius: 24px; width: 100%; display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 16px; font-weight: 600; transition: var(--transition-smooth); }
+        .new-chat-btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        
+        .history-container { flex: 1; overflow-y: auto; padding: 10px 20px 20px 20px; }
+        .history-label { font-size: 12px; font-weight: 700; color: var(--text-tertiary); margin: 16px 0 12px 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .history-item { padding: 14px; color: var(--text-secondary); cursor: pointer; border-radius: 12px; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 12px; transition: 0.2s; margin-bottom: 6px; border: 1px solid transparent; background: rgba(0,0,0,0.2); }
+        .history-item:hover, .history-item.active { background: var(--bg-surface-highest); color: var(--text-primary); border-color: var(--border-light); transform: translateX(4px); }
+#main-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; z-index: 1; }
+        #chat-scroll { flex: 1; overflow-y: auto; padding: 20px; scroll-behavior: smooth; display: flex; flex-direction: column; align-items: center; }
+        .chat-inner { width: 100%; max-width: 850px; display: flex; flex-direction: column; padding-bottom: 40px; }
+
+        .empty-state { margin-top: 10vh; width: 100%; max-width: 850px; padding: 20px; animation: fadeIn 0.8s ease; }
+        .greet-title { font-size: clamp(36px, 6vw, 52px); font-weight: 500; background: var(--gemini-gradient); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; letter-spacing: -1.5px; animation: shimmer 6s infinite linear; }
+        .greet-subtitle { font-size: clamp(30px, 5vw, 46px); font-weight: 500; color: var(--text-tertiary); line-height: 1.2; letter-spacing: -1px; margin-top: 8px; }
+        
+        .suggestion-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 50px; }
+        .sug-card { background: var(--bg-surface); border: 1px solid var(--border-light); padding: 20px; border-radius: 20px; cursor: pointer; transition: var(--transition-smooth); display: flex; flex-direction: column; gap: 16px; backdrop-filter: blur(10px); }
+        .sug-card:hover { background: var(--bg-surface-elevated); transform: translateY(-4px); border-color: rgba(255,255,255,0.2); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .sug-icon { font-size: 28px; background: var(--bg-surface-highest); width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; border: 1px solid var(--border-light); }
+        .sug-text { font-size: 15px; color: var(--text-primary); line-height: 1.4; }
+
+        .message-row { display: flex; width: 100%; margin-bottom: 32px; animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
+        .message-row.user { justify-content: flex-end; }
+        .message-row.ai { justify-content: flex-start; }
+        .bubble-wrapper { display: flex; gap: 20px; max-width: 88%; position: relative; }
+        .message-row.user .bubble-wrapper { flex-direction: row-reverse; }
+        
+        .bubble { padding: 16px 24px; font-size: 16px; line-height: 1.6; border-radius: 28px; color: var(--text-primary); overflow-wrap: break-word; }
+        .message-row.user .bubble { background: var(--bg-surface-highest); border-top-right-radius: 6px; box-shadow: 0 5px 20px rgba(0,0,0,0.25); border: 1px solid var(--border-light); }
+        .message-row.ai .bubble { background: transparent; padding: 4px 0; width: 100%; font-size: 16px; }
+
+        .ai-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--bg-surface-highest); border: 1px solid var(--border-light); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .spark-icon { width: 26px; height: 26px; background: var(--gemini-gradient); background-size: 200% auto; -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 0l2.5 8.5L23 11l-8.5 2.5L12 22l-2.5-8.5L1 11l8.5-2.5z"/></svg>') center/contain no-repeat; transition: all 0.3s; }
+        .ai-avatar.thinking .spark-icon { animation: spinPulse 1.5s infinite ease-in-out, shimmer 2s infinite linear; filter: drop-shadow(0 0 12px rgba(155, 114, 203, 0.9)); }
+
+        .copy-btn { position: absolute; bottom: -28px; left: 60px; background: var(--bg-surface-elevated); border: 1px solid var(--border-light); color: var(--text-tertiary); cursor: pointer; font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 8px; display: flex; align-items: center; gap: 6px; opacity: 0; transition: 0.2s; transform: translateY(-5px); }
+        .message-row.ai:hover .copy-btn { opacity: 1; transform: translateY(0); }
+        .copy-btn:hover { color: var(--text-primary); background: var(--bg-surface-highest); border-color: rgba(255,255,255,0.2); }
+
+        .bubble pre { background: #000; border: 1px solid var(--border-light); padding: 18px; border-radius: 16px; overflow-x: auto; margin: 16px 0; font-family: 'Courier New', monospace; font-size: 14px; box-shadow: inset 0 0 10px rgba(255,255,255,0.02); }
+        .bubble code { font-family: monospace; color: var(--accent-blue); background: rgba(168, 199, 250, 0.1); padding: 3px 6px; border-radius: 6px; border: 1px solid rgba(168, 199, 250, 0.2); }
+        .bubble pre code { background: transparent; border: none; padding: 0; color: #e3e3e3; }
+        .bubble p { margin-bottom: 14px; } .bubble p:last-child { margin-bottom: 0; }
+        
+        .input-area { padding: 10px 20px 20px 20px; background: linear-gradient(transparent, var(--bg-base) 25%); padding-bottom: calc(20px + env(safe-area-inset-bottom)); flex-shrink: 0; display: flex; justify-content: center; z-index: 10; position: relative; }
+        .input-pill { width: 100%; max-width: 850px; background: var(--bg-surface-elevated); border-radius: 36px; display: flex; align-items: flex-end; padding: 10px 16px; border: 1px solid var(--border-light); transition: var(--transition-smooth); backdrop-filter: blur(15px); box-shadow: var(--shadow-glass); }
+        .input-pill:focus-within { border-color: rgba(255,255,255,0.3); box-shadow: 0 8px 30px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.1); }
+        .input-pill textarea { flex: 1; background: transparent; border: none; color: var(--text-primary); font-size: 16px; padding: 12px; max-height: 200px; resize: none; line-height: 1.5; }
+        .input-pill textarea::placeholder { color: var(--text-tertiary); }
+        .pill-actions { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; }
+        .send-btn { background: var(--text-secondary); color: var(--bg-base); border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: scale(0); opacity: 0; font-size: 18px; }
+        .send-btn.visible { transform: scale(1); opacity: 1; background: var(--text-primary); }
+        .send-btn:hover { background: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.6); transform: scale(1.1); }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999; display: flex; align-items: flex-end; justify-content: center; opacity: 0; visibility: hidden; transition: 0.4s; backdrop-filter: blur(6px); }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .bottom-sheet { width: 100%; max-width: 650px; background: var(--bg-surface-elevated); border-radius: 28px 28px 0 0; padding: 24px 32px; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); max-height: 85dvh; display: flex; flex-direction: column; border: 1px solid var(--border-light); border-bottom: none; box-shadow: 0 -10px 40px rgba(0,0,0,0.5); }
+        .modal-overlay.active .bottom-sheet { transform: translateY(0); }
+        .sheet-handle { width: 48px; height: 5px; background: rgba(255,255,255,0.2); border-radius: 3px; margin: 0 auto 24px auto; }
+        .sheet-title { font-size: 24px; font-weight: 600; margin-bottom: 24px; text-align: center; letter-spacing: -0.5px; }
+        .sheet-content { overflow-y: auto; flex: 1; padding-bottom: 24px; padding-right: 5px; }
+
+        .status-wrapper { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; background: rgba(0,0,0,0.3); padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); }
+        .status-badge { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; }
+        .status-dot { width: 12px; height: 12px; border-radius: 50%; background: #444; transition: 0.3s; }
+        .status-dot.yellow { background: var(--warning); animation: pulse-yellow 1.5s infinite; }
+        .status-dot.green { background: var(--accent-green); box-shadow: 0 0 12px var(--accent-green); }
+        .status-dot.red { background: var(--danger); animation: shake 0.4s ease-in-out; box-shadow: 0 0 12px var(--danger); }
+        
+        .setting-group { background: var(--bg-surface); border-radius: 20px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border-light); }
+        .setting-group label { display: block; font-size: 12px; color: var(--text-tertiary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;}
+        .setting-group input[type="text"], .setting-group input[type="password"] { width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border-light); border-radius: 12px; color: var(--text-primary); font-size: 16px; padding: 14px; transition: 0.3s; }
+        .setting-group input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(168, 199, 250, 0.2); }
+        
+        .img-upload-wrapper { display: flex; align-items: center; gap: 16px; }
+        .upload-btn { background: var(--bg-surface-highest); color: var(--text-primary); border: 1px solid var(--border-light); padding: 10px 20px; border-radius: 16px; cursor: pointer; font-size: 14px; font-weight: 600; transition: 0.2s; }
+        .upload-btn:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.3); }
+
+        .primary-btn { width: 100%; background: var(--text-primary); color: var(--bg-base); font-size: 16px; font-weight: 700; border: none; border-radius: 28px; padding: 18px; margin-top: 10px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(255,255,255,0.1); }
+        .primary-btn:hover { background: #fff; transform: scale(0.98); box-shadow: 0 2px 8px rgba(255,255,255,0.2); }
+        .test-btn { background: var(--bg-surface-highest); color: var(--text-primary); border: 1px solid var(--border-light); padding: 10px 18px; border-radius: 16px; cursor: pointer; font-size: 14px; font-weight: 600; transition: 0.2s; }
+        .test-btn:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.3); }
+
+        .accordion-item { margin-bottom: 16px; border: 1px solid var(--border-light); border-radius: 16px; overflow: hidden; background: var(--bg-surface); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .accordion-header { padding: 18px 20px; cursor: pointer; display: flex; justify-content: space-between; font-weight: 600; font-size: 15px; user-select: none; transition: background 0.2s; }
+        .accordion-header:hover { background: rgba(255,255,255,0.03); }
+        .accordion-content { display: none; padding: 0 12px 16px 12px; gap: 10px; flex-direction: column; }
+        .accordion-content.active { display: flex; }
+        .model-item { padding: 14px 16px; border-radius: 12px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; background: rgba(0,0,0,0.2); display: flex; justify-content: space-between; align-items: center; }
+        .model-item:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.02); }
+        .model-item.selected { border-color: var(--accent-blue); background: rgba(168, 199, 250, 0.08); box-shadow: 0 0 15px rgba(168, 199, 250, 0.1); }
+        .model-name { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+        .model-desc { font-size: 13px; color: var(--text-tertiary); }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(25px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spinPulse { 0% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.3) rotate(180deg); } 100% { transform: scale(1) rotate(360deg); } }
+        @keyframes shimmer { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
+        @keyframes pulse-yellow { 0% { box-shadow: 0 0 0 0 rgba(255, 184, 0, 0.5); } 70% { box-shadow: 0 0 0 8px rgba(255, 184, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 184, 0, 0); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+    <header id="header">
+        <div class="header-left">
+            <button class="icon-btn" id="menuBtn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+            </button>
+            <div class="app-title" contenteditable="true" spellcheck="false" id="appName">Edge AI Studio</div>
+            <div class="model-badge" id="modelSelectBtn">
+                <span style="color:#d96570; font-size:16px;">✨</span>
+                <span id="currentModelLabel">Select Model</span>
+                <span style="font-size:12px; opacity:0.7;">▼</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238e918f'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>" class="user-pfp" id="userPfpBtn" alt="User">
+        </div>
+    </header>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <button class="new-chat-btn" id="newChatBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                New Session
+            </button>
+        </div>
+        <div class="history-container">
+            <div class="history-label">Recent Conversations</div>
+            <div id="historyList"></div>
+        </div>
+    </div>
+
+    <div id="main-container">
+        <div id="chat-scroll">
+            <div class="chat-inner" id="chatInner">
+                
+                <div class="empty-state" id="emptyState">
+                    <div class="greet-title" contenteditable="true" spellcheck="false" id="greetTitle">Hello, Jyotirmoy</div>
+                    <div class="greet-subtitle" contenteditable="true" spellcheck="false" id="greetSub">How can I assist you today?</div>
+                    
+                    <div class="suggestion-grid">
+                        <div class="sug-card" onclick="setInput('Write a modular Python script for network scanning and IP tracking...')">
+                            <div class="sug-icon">🛡️</div>
+                            <span class="sug-text">Write a Python network scanning script</span>
+                        </div>
+                        <div class="sug-card" onclick="setInput('Explain the mathematical derivation of the Van der Waals equation step-by-step...')">
+                            <div class="sug-icon">📐</div>
+                            <span class="sug-text">Derive the Van der Waals equation</span>
+                        </div>
+                        <div class="sug-card" onclick="setInput('What are the optimal network and ping settings for gaming on OriginOS/Jio?')">
+                            <div class="sug-icon">⚡</div>
+                            <span class="sug-text">Optimize OriginOS network settings</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="chatLog"></div>
+            </div>
+        </div>
+<div class="input-area">
+            <div class="input-pill" id="inputPill">
+                <button class="icon-btn" style="border:none; background:transparent;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+                <textarea id="userInput" placeholder="Ask anything..." rows="1"></textarea>
+                <div class="pill-actions">
+                    <button class="send-btn" id="sendBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settingsModal">
+        <div class="bottom-sheet">
+            <div class="sheet-handle"></div>
+            <div class="sheet-title">System Configuration</div>
+            <div class="sheet-content">
+                <div class="setting-group">
+                    <label>User Profile Avatar</label>
+                    <div class="img-upload-wrapper">
+                        <img src="" class="user-pfp" id="settingsPfpPreview" style="width:48px;height:48px; display:none; cursor:default;">
+                        <input type="file" id="imgUpload" accept="image/*" style="display:none;">
+                        <button class="upload-btn" onclick="document.getElementById('imgUpload').click()">Upload Image</button>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label>API Endpoint</label>
+                    <input type="text" id="baseUrlInput" value="https://integrate.api.nvidia.com/v1">
+                </div>
+                <div class="setting-group">
+                    <label>Custom CORS Proxy (Optional Fallback)</label>
+                    <input type="text" id="customProxyInput" placeholder="e.g. https://myproxy.workers.dev/?">
+                </div>
+                <div class="setting-group">
+                    <label>NVIDIA API Key</label>
+                    <input type="password" id="apiKeyInput" placeholder="nvapi-...">
+                    <div class="status-wrapper">
+                        <div class="status-badge">
+                            <div id="api-status-dot" class="status-dot"></div>
+                            <span id="api-status-text">Not Connected</span>
+                        </div>
+                        <button class="test-btn" id="testConnBtn">Test Connection</button>
+                    </div>
+                </div>
+                <button class="primary-btn" id="saveConfigBtn">Save & Apply Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modelModal">
+        <div class="bottom-sheet">
+            <div class="sheet-handle"></div>
+            <div class="sheet-title">Select AI Engine</div>
+            <div class="sheet-content" id="modelsContainer">
+                <div style="text-align:center; padding:30px; color:var(--text-tertiary); font-size:16px;">Connect API key in settings to fetch dynamic models.</div>
+            </div>
+        </div>
+    </div>
+<script>
+        // ==========================================================================
+        // [ 1. QPP7 BACKGROUND ANIMATION ]
+        // ==========================================================================
+        const canvas = document.getElementById("bg-canvas");
+        const ctx = canvas.getContext("2d");
+        
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeCanvas); resizeCanvas();
+
+        const particles = Array.from({ length: 60 }, () => ({
+            x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+            vx: (Math.random() - 0.5) * 0.5, vy: (Math.random() - 0.5) * 0.5, radius: Math.random() * 2 + 1
+        }));
+
+        function drawBgAnim() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.x += p.vx; p.y += p.vy;
+                if(p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                if(p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                ctx.fillStyle = "rgba(168, 199, 250, 0.15)";
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
+            });
+            requestAnimationFrame(drawBgAnim);
+        }
+        drawBgAnim();
+
+        // ==========================================================================
+        // [ 2. CORE STATE, INIT & DOM ]
+        // ==========================================================================
+        const el = {
+            input: document.getElementById('userInput'), sendBtn: document.getElementById('sendBtn'),
+            chatLog: document.getElementById('chatLog'), emptyState: document.getElementById('emptyState'),
+            chatScroll: document.getElementById('chat-scroll'), apiKeyIn: document.getElementById('apiKeyInput'),
+            baseUrlIn: document.getElementById('baseUrlInput'), customProxyIn: document.getElementById('customProxyInput'),
+            statusDot: document.getElementById('api-status-dot'), statusText: document.getElementById('api-status-text'),
+            modelsContainer: document.getElementById('modelsContainer'), currentModelLabel: document.getElementById('currentModelLabel'),
+            userPfpBtn: document.getElementById('userPfpBtn'), settingsPfpPreview: document.getElementById('settingsPfpPreview'),
+            imgUpload: document.getElementById('imgUpload')
+        };
+
+        let config = {
+            apiKey: localStorage.getItem('nv_key') || '', baseUrl: localStorage.getItem('nv_base') || 'https://integrate.api.nvidia.com/v1',
+            customProxy: localStorage.getItem('nv_proxy') || '', modelId: localStorage.getItem('nv_id') || '', 
+            modelName: localStorage.getItem('nv_name') || 'Select Model', userImg: localStorage.getItem('nv_user_img') || null,
+            modelsCache: JSON.parse(localStorage.getItem('nv_cache')) || null, isGenerating: false
+        };
+
+        let sessions = JSON.parse(localStorage.getItem('nv_sessions')) || {};
+        let currentSessionId = null; let currentHistory = [];
+
+        // Apply state to UI
+        el.apiKeyIn.value = config.apiKey; el.baseUrlIn.value = config.baseUrl; el.customProxyIn.value = config.customProxy;
+        el.currentModelLabel.innerText = config.modelName;
+        if(config.userImg) {
+            el.userPfpBtn.src = config.userImg; el.settingsPfpPreview.src = config.userImg; el.settingsPfpPreview.style.display = 'block';
+        }
+        
+        ['appName', 'greetTitle', 'greetSub'].forEach(id => {
+            const node = document.getElementById(id);
+            if(localStorage.getItem(id)) node.innerText = localStorage.getItem(id);
+            node.addEventListener('blur', () => localStorage.setItem(id, node.innerText));
+        });
+
+        function updateStatus(color, text) { el.statusDot.className = `status-dot ${color}`; el.statusText.innerText = text; }
+// ==========================================================================
+        // [ 3. GITHUB PAGES OPTIMIZED API FETCH (Direct Priority) ]
+        // ==========================================================================
+        async function proxyFetch(endpoint, options = {}) {
+            const url = `${config.baseUrl}${endpoint}`;
+            if (!options.headers) options.headers = {};
+            options.headers["Authorization"] = `Bearer ${config.apiKey}`;
+            if (options.method === 'POST' && !options.headers["Content-Type"]) options.headers["Content-Type"] = "application/json";
+
+            // GitHub Pages allows direct fetching! We prioritize it.
+            const proxies = [{ name: "Direct", url: url }];
+            
+            if (config.customProxy) proxies.push({ name: "Custom", url: `${config.customProxy}${url}` });
+            proxies.push({ name: "CorsProxy", url: `https://corsproxy.io/?${encodeURIComponent(url)}` });
+            
+            // Only AllOrigins for GET requests as it strips headers sometimes
+            if (!options.method || options.method === 'GET') {
+                proxies.push({ name: "AllOrigins", url: `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` });
+            }
+
+            let errors = [];
+            for (let p of proxies) {
+                try {
+                    const controller = new AbortController();
+                    const id = setTimeout(() => controller.abort(), 8000);
+                    const res = await fetch(p.url, { ...options, signal: controller.signal });
+                    clearTimeout(id);
+                    if (res.ok) return res;
+                    errors.push(`${p.name}:${res.status}`);
+                } catch (e) {
+                    errors.push(`${p.name}:Failed`);
+                }
+            }
+            throw new Error(`Connection Blocked (${errors.join(', ')})`);
+        }
+
+        async function fetchModelsWithRetry() {
+            updateStatus('yellow', 'Connecting...');
+            if(!el.apiKeyIn.value.trim()) { updateStatus('red', 'Missing API Key'); return false; }
+            try {
+                // Update config locally for fetch test
+                config.apiKey = el.apiKeyIn.value.trim(); config.baseUrl = el.baseUrlIn.value.trim(); config.customProxy = el.customProxyIn.value.trim();
+                
+                const res = await proxyFetch('/models', { method: 'GET' });
+                const data = await res.json();
+                if(!data.data) throw new Error("Invalid format received");
+                
+                config.modelsCache = data.data; localStorage.setItem('nv_cache', JSON.stringify(data.data));
+                updateStatus('green', 'Connected Live'); renderModels(data.data); return true;
+            } catch(e) {
+                updateStatus('red', e.message); return false;
+            }
+        }
+
+        // ==========================================================================
+        // [ 4. MODEL RENDER SYSTEM ]
+        // ==========================================================================
+        function categorizeModels(models) {
+            const cat = { "Pro (Heavy)": [], "Balanced": [], "Fast (Light)": [], "Specialized": [] };
+            models.forEach(m => {
+                const id = m.id.toLowerCase(); let s = id.match(/(\d+)(b|x)/); let size = s ? parseInt(s[1]) : 0;
+                if (id.includes('code') || id.includes('math') || id.includes('vision') || id.includes('nemotron')) { cat["Specialized"].push(m); } 
+                else if (size >= 70) { cat["Pro (Heavy)"].push(m); } else if (size > 0 && size <= 15) { cat["Fast (Light)"].push(m); } 
+                else { cat["Balanced"].push(m); }
+            });
+            return cat;
+        }
+
+        function renderModels(models) {
+            if (!models || models.length === 0) return;
+            const categories = categorizeModels(models); el.modelsContainer.innerHTML = '';
+            for (const [category, list] of Object.entries(categories)) {
+                if (list.length === 0) continue;
+                const html = `
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('active')">
+                            <span>⚡ ${category} (${list.length})</span><span style="font-size:12px; opacity:0.6;">▼</span>
+                        </div>
+                        <div class="accordion-content">
+                            ${list.map(m => {
+                                const name = m.id.split('/').pop(); const isSelected = config.modelId === m.id;
+                                return `<div class="model-item ${isSelected ? 'selected' : ''}" onclick="selectModel('${m.id}', '${name}')">
+                                    <div><div class="model-name">${name}</div><div class="model-desc">${m.id.split('/')[0]}</div></div>
+                                    <div style="color:var(--accent-blue); opacity:${isSelected ? '1':'0'}; font-size:20px;">✓</div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>`;
+                el.modelsContainer.insertAdjacentHTML('beforeend', html);
+            }
+            if (!config.modelId && models.length > 0) selectModel(models[0].id, models[0].id.split('/').pop());
+        }
+
+        window.selectModel = (id, name) => {
+            config.modelId = id; config.modelName = name;
+            localStorage.setItem('nv_id', id); localStorage.setItem('nv_name', name);
+            el.currentModelLabel.innerText = name; document.getElementById('modelModal').classList.remove('active');
+            if(config.modelsCache) renderModels(config.modelsCache); 
+        };
+
+        // ==========================================================================
+        // [ 5. UI INTERACTIONS & EVENTS ]
+        // ==========================================================================
+        document.getElementById('menuBtn').onclick = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('active'); renderSidebar(); };
+        document.getElementById('sidebarOverlay').onclick = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active'); };
+        document.getElementById('userPfpBtn').onclick = () => document.getElementById('settingsModal').classList.add('active');
+        document.getElementById('modelSelectBtn').onclick = () => { document.getElementById('modelModal').classList.add('active'); if(config.modelsCache) renderModels(config.modelsCache); else fetchModelsWithRetry(); };
+        document.querySelectorAll('.modal-overlay').forEach(overlay => { overlay.onclick = (e) => { if(e.target === overlay) overlay.classList.remove('active'); } });
+
+        // Image Uploader
+        el.imgUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    config.userImg = e.target.result;
+                    el.settingsPfpPreview.src = config.userImg; el.settingsPfpPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('testConnBtn').onclick = fetchModelsWithRetry;
+        document.getElementById('saveConfigBtn').onclick = () => {
+            config.apiKey = el.apiKeyIn.value.trim(); config.baseUrl = el.baseUrlIn.value.trim(); config.customProxy = el.customProxyIn.value.trim();
+            localStorage.setItem('nv_key', config.apiKey); localStorage.setItem('nv_base', config.baseUrl); localStorage.setItem('nv_proxy', config.customProxy);
+            if(config.userImg) { localStorage.setItem('nv_user_img', config.userImg); el.userPfpBtn.src = config.userImg; }
+            fetchModelsWithRetry().then(s => { if(s) setTimeout(() => document.getElementById('settingsModal').classList.remove('active'), 500); });
+        };
+
+        window.setInput = (text) => { el.input.value = text; el.input.dispatchEvent(new Event('input')); el.input.focus(); };
+        el.input.addEventListener('input', function() {
+            this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+            if(this.value.trim().length > 0) el.sendBtn.classList.add('visible'); else el.sendBtn.classList.remove('visible');
+        });
+        el.input.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } });
+        el.sendBtn.onclick = handleSend;
+
+        window.copyText = (btn) => {
+            navigator.clipboard.writeText(btn.parentElement.querySelector('.bubble').innerText);
+            const original = btn.innerHTML; btn.innerHTML = '✓ Copied'; setTimeout(() => btn.innerHTML = original, 2000);
+        };
+
+        document.getElementById('newChatBtn').onclick = () => {
+            currentSessionId = null; currentHistory = []; el.chatLog.innerHTML = ''; el.emptyState.style.display = 'block';
+            document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active');
+        };
+// ==========================================================================
+        // [ 6. CHAT ENGINE & DIRECT STREAMING ]
+        // ==========================================================================
+        function renderMessage(content, role, isThinking = false) {
+            const row = document.createElement('div'); row.className = `message-row ${role}`;
+            let innerHTML = `<div class="bubble-wrapper">`;
+            
+            if(role === 'user') {
+                let defaultSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238e918f'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>";
+                innerHTML += `<img src="${config.userImg || defaultSvg}" class="user-pfp" style="cursor:default; border:none; background:transparent;">`;
+                innerHTML += `<div class="bubble">${DOMPurify.sanitize(content.replace(/</g, "&lt;"))}</div>`;
+            } else {
+                innerHTML += `<div class="ai-avatar ${isThinking ? 'thinking' : ''}"><div class="spark-icon"></div></div>`;
+                innerHTML += `<div class="bubble markdown-body">${isThinking ? '' : DOMPurify.sanitize(marked.parse(content))}</div>`;
+                if(!isThinking) innerHTML += `<button class="copy-btn" onclick="copyText(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button>`;
+            }
+            
+            innerHTML += `</div>`; row.innerHTML = innerHTML; el.chatLog.appendChild(row);
+            setTimeout(() => { el.chatScroll.scrollTop = el.chatScroll.scrollHeight; }, 50); return row;
+        }
+
+        async function handleSend() {
+            const text = el.input.value.trim();
+            if(!text || config.isGenerating) return;
+            if(!config.apiKey || !config.modelId) { document.getElementById('settingsModal').classList.add('active'); return; }
+
+            if(!currentSessionId) currentSessionId = Date.now().toString();
+            el.emptyState.style.display = 'none';
+            el.input.value = ''; el.input.style.height = 'auto'; el.sendBtn.classList.remove('visible'); config.isGenerating = true;
+            
+            renderMessage(text, 'user'); currentHistory.push({ role: 'user', content: text }); saveSession();
+
+            const aiRow = renderMessage('', 'ai', true);
+            const bubble = aiRow.querySelector('.bubble'); const avatar = aiRow.querySelector('.ai-avatar');
+            let fullAiText = ""; let isStreaming = true; let response;
+
+            try {
+                // Attempt Direct Fetch first (GitHub pages allows this)
+                try {
+                    const controller = new AbortController(); const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    response = await fetch(`${config.baseUrl}/chat/completions`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.apiKey}` },
+                        body: JSON.stringify({ model: config.modelId, messages: currentHistory, stream: true, max_tokens: 2048 }),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId); if(!response.ok) throw new Error("Direct failed");
+                } catch (e) {
+                    // Fallback to Proxy without stream if direct blocked
+                    isStreaming = false;
+                    response = await proxyFetch('/chat/completions', {
+                        method: 'POST', body: JSON.stringify({ model: config.modelId, messages: currentHistory, stream: false, max_tokens: 2048 })
+                    });
+                }
+
+                if (isStreaming) {
+                    const reader = response.body.getReader(); const decoder = new TextDecoder("utf-8");
+                    while(true) {
+                        const { done, value } = await reader.read(); if(done) break;
+                        const lines = decoder.decode(value, {stream: true}).split('\n');
+                        for(const line of lines) {
+                            if(line.startsWith('data: ') && line !== 'data: [DONE]') {
+                                try {
+                                    const data = JSON.parse(line.slice(6));
+                                    if(data.choices[0].delta.content) {
+                                        fullAiText += data.choices[0].delta.content;
+                                        bubble.innerHTML = DOMPurify.sanitize(marked.parse(fullAiText));
+                                        el.chatScroll.scrollTop = el.chatScroll.scrollHeight;
+                                    }
+                                } catch(e) {}
+                            }
+                        }
+                    }
+                } else {
+                    const data = await response.json();
+                    if(data.choices && data.choices[0].message.content) {
+                        fullAiText = data.choices[0].message.content; bubble.innerHTML = DOMPurify.sanitize(marked.parse(fullAiText));
+                        el.chatScroll.scrollTop = el.chatScroll.scrollHeight;
+                    } else throw new Error("Invalid format from proxy.");
+                }
+
+            } catch (err) {
+                bubble.innerHTML = `<span style="color:var(--danger); font-weight:bold;">API Connection Blocked. Check network or try custom proxy.</span>`;
+            } finally {
+                avatar.classList.remove('thinking');
+                if(!aiRow.querySelector('.copy-btn')) { aiRow.querySelector('.bubble-wrapper').insertAdjacentHTML('beforeend', `<button class="copy-btn" onclick="copyText(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button>`); }
+                config.isGenerating = false;
+                if(fullAiText) { currentHistory.push({ role: 'assistant', content: fullAiText }); saveSession(); } renderSidebar();
+            }
+        }
+
+        function saveSession() { sessions[currentSessionId] = currentHistory; localStorage.setItem('nv_sessions', JSON.stringify(sessions)); }
+
+        function renderSidebar() {
+            const list = document.getElementById('historyList'); list.innerHTML = '';
+            Object.keys(sessions).reverse().forEach(id => {
+                const history = sessions[id]; if(history.length === 0) return;
+                const div = document.createElement('div'); div.className = `history-item ${id === currentSessionId ? 'active' : ''}`;
+                div.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> <span style="overflow:hidden; text-overflow:ellipsis;">${DOMPurify.sanitize(history[0].content)}</span>`;
+                div.onclick = () => {
+                    currentSessionId = id; currentHistory = history; el.chatLog.innerHTML = ''; el.emptyState.style.display = 'none';
+                    history.forEach(msg => renderMessage(msg.content, msg.role));
+                    document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('active');
+                };
+                list.appendChild(div);
+            });
+        }
+
+        if(config.apiKey && !config.modelsCache) { fetchModelsWithRetry(); } else if (config.apiKey && config.modelsCache) { updateStatus('green', 'Ready'); }
+        renderSidebar();
+    </script>
+</body>
+</html>
